@@ -1,6 +1,19 @@
 import altair as alt
 import pandas as pd
 import streamlit as st
+from card_scraper import fetch_all_scratchcards, time_since_creation
+
+DAY = 86400
+HISHGAD_URL = 'https://www.pais.co.il/hishgad/'
+
+try:
+    if time_since_creation('scratchcards_database.pkl') > DAY:
+        fetch_all_scratchcards(HISHGAD_URL)
+    else:
+        print(time_since_creation('scratchcards_database.pkl'))
+except FileNotFoundError:
+    print("new")
+    fetch_all_scratchcards(HISHGAD_URL) 
 
 # Show the page title and description.
 st.set_page_config(page_title="Movies dataset", page_icon="🎬")
@@ -18,12 +31,19 @@ st.write(
 # reruns (e.g. if the user interacts with the widgets).
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/movies_genres_summary.csv")
-    return df
+    try:
+        # Check if there there is data
+        database= pd.read_pickle('scratchcards_database.pkl')['data']
+        return database
+
+    except FileNotFoundError:
+        # Handle the case where the pickle file doesn't exist
+        print(f"Pickle file '{'test.pkl'}' not found")   
+    
 
 
 df = load_data()
-
+"""
 # Show a multiselect widget with the genres using `st.multiselect`.
 genres = st.multiselect(
     "Genres",
@@ -64,3 +84,4 @@ chart = (
     .properties(height=320)
 )
 st.altair_chart(chart, use_container_width=True)
+"""
