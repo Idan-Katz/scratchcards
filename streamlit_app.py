@@ -11,7 +11,7 @@ st.write(
     Just click on the widgets below to explore!"""   
 )
 
-# Define the load_data function 
+# Define the load_data function
 def load_data():
     try:
         # Check if there is data
@@ -34,8 +34,12 @@ if not df_data.empty:
 
     # Add widgets
     ticket_cost = st.multiselect(
-        "Ticket Cost", ticket_cost_options, default=ticket_cost_options
+        "Ticket Cost", ticket_cost_options
     )
+    # If no ticket cost options are selected, set to all options
+    if not ticket_cost:
+        ticket_cost = ticket_cost_options
+
     ROI = st.slider("ROI", 1, 100, (1, 100))
 
     # Filter DataFrame
