@@ -1,6 +1,5 @@
 streamlit
 pandas
-numpy
+nump
 requests
 beautifulsoup4
-concurrent.futures
