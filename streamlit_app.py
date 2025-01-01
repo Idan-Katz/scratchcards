@@ -11,7 +11,7 @@ st.write(
     Just click on the widgets below to explore!"""   
 )
 
-# Define the load_data function
+# Define the load_data function 
 def load_data():
     try:
         # Check if there is data
