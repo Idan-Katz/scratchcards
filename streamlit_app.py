@@ -1,6 +1,10 @@
 import pandas as pd
 import streamlit as st
 import card_scraper
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
 # Configure the page
 st.set_page_config(page_title="Movies dataset", page_icon="🎟️")
 st.title("🎟️ Scratchcard dataset")
@@ -61,3 +65,35 @@ if not df_data.empty:
         },
         hide_index=True,
     )
+
+st.markdown(
+    """
+    <div style="text-align: center;">
+    <h2>Higher stakes, higher rewards</h2>
+    <h6>Unless anomalies ruin the fun!</h6>
+    </div>
+    """, unsafe_allow_html=True
+)
+ 
+  
+# Plot the data points
+plt.scatter(df_filtered["ticket_cost"], df_filtered["ROI"], color='blue', alpha=0.5, label='Ticket cost')
+
+# Fit a linear regression model
+model = LinearRegression()
+model.fit(df_filtered["ticket_cost"].values.reshape(-1, 1), df_filtered["ROI"])
+
+# Plot the linear regression line
+plt.plot(df_filtered["ticket_cost"], model.predict(df_filtered["ticket_cost"].values.reshape(-1, 1)), color='red', label='Trend')
+
+# Labels and title
+plt.xlabel('Ticket Cost')
+plt.ylabel('ROI')
+plt.title('Ticket Cost vs ROI')
+
+# Adjust layout for better fit
+plt.tight_layout()
+plt.grid(axis='y', linestyle="dashed", alpha=1)
+
+# Display the plot
+graph = st.pyplot(plt, use_container_width=True)
