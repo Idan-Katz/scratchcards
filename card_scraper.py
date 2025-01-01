@@ -1,10 +1,14 @@
 import pandas as pd
+import numpy as np
 import requests
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 import os
 import time
 
+DAY = 86400
+HISHGAD_URL = 'https://www.pais.co.il/hishgad/'
+DATABASE_URL = "/workspaces/scratchcards/scratchcards_database.pkl"
 CUSTOM_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
     "Accept-Encoding": "gzip, deflate, br, zstd",
@@ -24,6 +28,7 @@ CUSTOM_HEADERS = {
     "sec-ch-ua-mobile": "?0",
     "sec-ch-ua-platform": '"Windows"'
 }
+
 def page_to_soup(url,save = 0):
     response = requests.get(url, headers=CUSTOM_HEADERS) 
     # Optional - Save the HTML for debug
@@ -93,18 +98,23 @@ def fetch_scartchcard_data(url):
     scratchcards = scratchcards.reset_index().set_index(['image','name','total_tickets_cost'])
     return scratchcards
 
-def time_since_creation(file_path):
-    creation_time = os.path.getctime(file_path)
+def time_since_modified(file_path):
     current_time = time.time()
-    time_diff = current_time - creation_time
-    return time_diff
+    last_modified_time = os.stat(file_path).st_mtime
+    time_difference = current_time - last_modified_time
+    return time_difference
 
-def fetch_all_scratchcards(all_cards_url):
+def fetch_all_scratchcards(all_cards_url): 
     scartchcard_urls = fetch_scartchcard_urls(all_cards_url)
     try:
         # Check if there is new card brfore fetching all URLS
         database = pd.read_pickle('scratchcards_database.pkl')
         if database['urls'] == scartchcard_urls:
+            # Get the current timestamp
+            current_time = time.time()
+
+            # Update the file's access and modification times to the current time
+            os.utime('scratchcards_database.pkl', (current_time, current_time))
             return
 
     except FileNotFoundError:
@@ -117,4 +127,21 @@ def fetch_all_scratchcards(all_cards_url):
 
     # Concatenate the resulting DataFrames
     scratchcards = pd.concat(results)
-    pd.to_pickle({'data': scratchcards, 'urls': scartchcard_urls},'/workspaces/scratchcards/scratchcards_database.pkl')
+    pd.to_pickle({'data': scratchcards, 'urls': scartchcard_urls},'scratchcards_database.pkl')
+
+def calculate_ROI(database):
+    ROI_list=[]
+    for card in range(len(database)):
+        specific_card = database.loc[[database.index[card]]]
+        card_prizes= pd.DataFrame({"prize":specific_card.prize.values[0], 'prize_count':specific_card.prize_count.values[0]})
+        prod = card_prizes.apply(np.prod,axis=1)
+        total_prize = prod.sum(axis=0)
+        total_tickets_cost = specific_card.index.unique('total_tickets_cost')[0]
+        name = specific_card.index.unique('name')[0]
+        ROI = (total_prize)/(total_tickets_cost)*100
+        ROI_str = f"{ROI:.1f}".rstrip('0').rstrip('.')
+        ROI_list.append(ROI_str)
+        specific_card
+    database_ROI= database.copy()
+    database_ROI['ROI']= ROI_list
+    return database_ROI.sort_values(by='ROI',ascending=False)

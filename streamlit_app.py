@@ -1,87 +1,59 @@
-import altair as alt
 import pandas as pd
 import streamlit as st
-from card_scraper import fetch_all_scratchcards, time_since_creation
-
-DAY = 86400
-HISHGAD_URL = 'https://www.pais.co.il/hishgad/'
-
-try:
-    if time_since_creation('scratchcards_database.pkl') > DAY:
-        fetch_all_scratchcards(HISHGAD_URL)
-    else:
-        print(time_since_creation('scratchcards_database.pkl'))
-except FileNotFoundError:
-    print("new")
-    fetch_all_scratchcards(HISHGAD_URL) 
-
-# Show the page title and description.
-st.set_page_config(page_title="Movies dataset", page_icon="🎬")
-st.title("🎬 Movies dataset")
+import card_scraper
+# Configure the page
+st.set_page_config(page_title="Movies dataset", page_icon="🎟️")
+st.title("🎟️ Scratchcard dataset")
 st.write(
     """
-    This app visualizes data from [The Movie Database (TMDB)](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata).
-    It shows which movie genre performed best at the box office over the years. Just 
-    click on the widgets below to explore!
-    """
+    This app visualizes data from [Pais site (hishgad)](https://www.pais.co.il/hishgad/), 
+    It shows which scratchcard has the best ROI.  
+    Just click on the widgets below to explore!"""   
 )
 
-
-# Load the data from a CSV. We're caching this so it doesn't reload every time the app
-# reruns (e.g. if the user interacts with the widgets).
-@st.cache_data
+# Define the load_data function
 def load_data():
     try:
-        # Check if there there is data
-        database= pd.read_pickle('scratchcards_database.pkl')['data']
-        return database
-
+        # Check if there is data
+        df_data = pd.read_pickle("scratchcards_database.pkl")["data"]
+        df_data = card_scraper.calculate_ROI(df_data)
+        df_data["ROI"] = df_data["ROI"].astype(float)
+        return df_data
     except FileNotFoundError:
         # Handle the case where the pickle file doesn't exist
-        print(f"Pickle file '{'test.pkl'}' not found")   
-    
+        st.error("Pickle file not found. Please run the data scraper first.")
+        return pd.DataFrame()
 
+# Load data
+df_data = load_data()
 
-df = load_data()
-"""
-# Show a multiselect widget with the genres using `st.multiselect`.
-genres = st.multiselect(
-    "Genres",
-    df.genre.unique(),
-    ["Action", "Adventure", "Biography", "Comedy", "Drama", "Horror"],
-)
+# Validate data before continuing
+if not df_data.empty:
+    # Extract ticket_cost options
+    ticket_cost_options = sorted(df_data.index.unique("ticket_cost").tolist())
 
-# Show a slider widget with the years using `st.slider`.
-years = st.slider("Years", 1986, 2006, (2000, 2016))
-
-# Filter the dataframe based on the widget input and reshape it.
-df_filtered = df[(df["genre"].isin(genres)) & (df["year"].between(years[0], years[1]))]
-df_reshaped = df_filtered.pivot_table(
-    index="year", columns="genre", values="gross", aggfunc="sum", fill_value=0
-)
-df_reshaped = df_reshaped.sort_values(by="year", ascending=False)
-
-
-# Display the data as a table using `st.dataframe`.
-st.dataframe(
-    df_reshaped,
-    use_container_width=True,
-    column_config={"year": st.column_config.TextColumn("Year")},
-)
-
-# Display the data as an Altair chart using `st.altair_chart`.
-df_chart = pd.melt(
-    df_reshaped.reset_index(), id_vars="year", var_name="genre", value_name="gross"
-)
-chart = (
-    alt.Chart(df_chart)
-    .mark_line()
-    .encode(
-        x=alt.X("year:N", title="Year"),
-        y=alt.Y("gross:Q", title="Gross earnings ($)"),
-        color="genre:N",
+    # Add widgets
+    ticket_cost = st.multiselect(
+        "Ticket Cost", ticket_cost_options, default=ticket_cost_options
     )
-    .properties(height=320)
-)
-st.altair_chart(chart, use_container_width=True)
-"""
+    ROI = st.slider("ROI", 1, 100, (1, 100))
+
+    # Filter DataFrame
+    df_filtered = df_data[
+        (df_data.index.get_level_values("ticket_cost").isin(ticket_cost)) & (df_data["ROI"].between(ROI[0], ROI[1]))
+    ]
+
+    # Reset the index to convert MultiIndex levels into regular columns and reorder it
+    df_filtered = df_filtered.reset_index()
+    df_filtered = df_filtered[['image','name','ticket_cost','ROI', 'prize', 'prize_count']]
+
+    # Display the filtered DataFrame with image URLs as preview images
+    st.data_editor(
+        df_filtered,
+        column_config={
+            "image": st.column_config.ImageColumn(
+                "Image", help="Streamlit app preview screenshots"
+            )
+        },
+        hide_index=True,
+    )
