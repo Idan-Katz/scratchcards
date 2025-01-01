@@ -1,9 +1,9 @@
-# 🎬 Movies dataset template
+# 🎟️ Scratchcard dataset
 
-A simple Streamlit app showing movie data from [The Movie Database (TMDB)](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata). 
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://movies-dataset-template.streamlit.app/)
+   Helping you discover which scratchcard offers the best ROI (Return on Investment).
 
+[![Streamlit App](https://www.pais.co.il/images/Hishgad-sml_1.png)](https://movies-dataset-template.streamlit.app/)
 ### How to run it on your own machine
 
 1. Install the requirements
