@@ -3,5 +3,5 @@ pandas
 nump
 requests
 beautifulsoup4
-sklearn
+scikit-learn
 matplotlib
