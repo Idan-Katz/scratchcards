@@ -2,8 +2,6 @@ import pandas as pd
 import streamlit as st
 import card_scraper
 import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 # Configure the page
 st.set_page_config(page_title="Movies dataset", page_icon="🎟️")
