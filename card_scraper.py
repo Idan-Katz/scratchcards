@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor
 import os
 import time
+from datetime import datetime
 
 DAY = 86400
 HISHGAD_URL = 'https://www.pais.co.il/hishgad/'
@@ -43,6 +44,36 @@ def fetch_scartchcard_urls(url):
     url_list_soup = soup.find('div',{'data-w-tab': 'Tab 1'}).find_all('a','hishgat_add_link w-inline-block')
     url_list = ['https://www.pais.co.il'+ link.get('href') for link in url_list_soup]
     return url_list
+
+def get_last_modified_time(url):
+    """
+    Fetches the Last-Modified time for a single image URL using a HEAD request.
+    Args:
+        url: The image URL.
+    Returns:
+        A tuple containing the URL and either:
+        - A datetime object representing the Last-Modified time.
+        - A string indicating "Last-Modified header not found".
+        - A string describing an error that occurred.
+    """
+    try:
+        response = requests.head(url)
+        response.raise_for_status()  # Check for HTTP errors (4xx or 5xx status codes)
+        if 'Last-Modified' in response.headers:
+            last_modified_str = response.headers['Last-Modified']
+            # Convert the Last-Modified string to a datetime object
+            last_modified_datetime = datetime.strptime(
+                last_modified_str, '%a, %d %b %Y %H:%M:%S %Z'
+            )
+            return last_modified_datetime
+        else:
+            return "Last-Modified header not found"
+    except requests.exceptions.RequestException as e:
+        return f"Error: {e}"
+    except ValueError as e:
+        return f"Error parsing Last-Modified: {e}"
+    except Exception as e:
+        return f"An unexpected error occurred: {e}"
 
 def fetch_scartchcard_data(url):
     soup = page_to_soup(url)
@@ -94,8 +125,10 @@ def fetch_scartchcard_data(url):
         'prize_count': list    # Combine prize_count values into a list
     })
     scratchcards['image'] = scratchcards_image
+    scratchcards['created_time'] = get_last_modified_time(scratchcards_image)
     scratchcards['name'] = scratchcards_name
-    scratchcards = scratchcards.reset_index().set_index(['image','name','total_tickets_cost'])
+    scratchcards['ticket_cost'] = tickets.loc['ticket_cost'].values
+    scratchcards = scratchcards.reset_index().set_index(['image','name','created_time' , 'ticket_cost','total_tickets_cost'])
     return scratchcards
 
 def time_since_modified(file_path):
