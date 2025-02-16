@@ -56,7 +56,7 @@ if not df_data.empty:
 
     # Reset the index to convert MultiIndex levels into regular columns and reorder it
     df_filtered = df_filtered.reset_index()
-    df_filtered = df_filtered[['image','name', 'created_time', 'ticket_cost','ROI', 'prize', 'prize_count']]
+    df_filtered = df_filtered[['image','name', 'ticket_cost','ROI', 'prize', 'prize_count', 'created_time']]
 
     # Regex to extract the first number (use '#' to comment on url for display_text later)
     regex = r"(?<=\/)(\d+)(?=_)"
